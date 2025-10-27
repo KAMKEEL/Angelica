@@ -300,7 +300,18 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
 
-            // Add spacing only if another visible glyph follows on this line
+            if (next > maxWidth) {
+                int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
+                if (bp <= 0) bp = i;
+                cir.setReturnValue(bp);
+                return;
+            }
+
+            // Only extend the running width with glyph spacing after we've
+            // confirmed the current glyph fits on this line. Otherwise we end
+            // up accounting for spacing on characters that actually wrap,
+            // which makes the algorithm believe there is less room than there
+            // really is (causing the premature "ok" -> newline behaviour).
             boolean nextVisibleSameLine = false;
             int j = i + 1;
             while (j < length) {
@@ -312,13 +323,6 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                 break;
             }
             if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
-
-            if (next > maxWidth) {
-                int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
-                if (bp <= 0) bp = i;
-                cir.setReturnValue(bp);
-                return;
-            }
 
             currentWidth = next;
             i++;
@@ -405,14 +409,13 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
-            next += batcher.getGlyphSpacing();
 
             if (next > width) {
                 cir.setReturnValue(text.substring(firstSafePosition));
                 return;
             }
 
-            currentWidth = next;
+            currentWidth = next + batcher.getGlyphSpacing();
             i--;
             firstSafePosition = i + 1;
         }
