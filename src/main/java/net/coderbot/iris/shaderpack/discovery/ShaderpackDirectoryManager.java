@@ -1,5 +1,6 @@
 package net.coderbot.iris.shaderpack.discovery;
 
+import com.gtnewhorizons.angelica.client.font.ColorCodeUtils;
 import net.coderbot.iris.Iris;
 
 import java.io.IOException;
@@ -80,22 +81,9 @@ public class ShaderpackDirectoryManager {
 	/**
 	 * Straightforward method to use section-sign based chat formatting from a String
 	 */
-	private static String removeFormatting(String formatted) {
-		char[] original = formatted.toCharArray();
-		char[] cleaned = new char[original.length];
-		int c = 0;
-
-		for (int i = 0; i < original.length; i++) {
-			// check if it's a section sign
-			if (original[i] == '\u00a7') {
-				i++;
-			} else {
-				cleaned[c++] = original[i];
-			}
-		}
-
-		return new String(cleaned, 0, c);
-	}
+        private static String removeFormatting(String formatted) {
+                return ColorCodeUtils.stripColorCodes(formatted);
+        }
 
 	public URI getDirectoryUri() {
 		return root.toUri();
