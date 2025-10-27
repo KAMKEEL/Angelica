@@ -307,13 +307,32 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                 char cj = str.charAt(j);
                 if (cj == '\n') break;
                 int n2 = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLength(str, j); // STRICT
-                if (n2 > 0) { j += n2; continue; }
+                if (n2 > 0) {
+                    j += n2;
+                    continue;
+                }
                 if (batcher.getCharWidthFine(cj) > 0) nextVisibleSameLine = true;
                 break;
             }
-            if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
+
+            float spacing = 0.0f;
+            if (nextVisibleSameLine) {
+                spacing = batcher.getGlyphSpacing();
+                next += spacing;
+            }
 
             if (next > maxWidth) {
+                // If the overrun is only caused by the spacing before the next glyph,
+                // allow the current character to remain on this line and break before
+                // the upcoming glyph instead of popping the previous word to the
+                // earlier line. This mirrors vanilla behaviour more closely and
+                // prevents duplicating short words across lines.
+                if (spacing > 0 && next - spacing <= maxWidth) {
+                    int breakIndex = Math.min(i + 1, length);
+                    cir.setReturnValue(breakIndex);
+                    return;
+                }
+
                 int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
                 if (bp <= 0) bp = i;
                 cir.setReturnValue(bp);
