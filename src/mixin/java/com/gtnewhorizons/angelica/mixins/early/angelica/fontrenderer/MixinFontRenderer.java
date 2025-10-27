@@ -297,10 +297,20 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             float charW = batcher.getCharWidthFine(c);
             if (charW < 0) charW = 0;
 
-            float next = currentWidth + charW;
-            if (isBold && charW > 0) next += batcher.getShadowOffset();
+            float widthWithChar = currentWidth + charW;
+            if (isBold && charW > 0) widthWithChar += batcher.getShadowOffset();
 
-            // Add spacing only if another visible glyph follows on this line
+            if (widthWithChar > maxWidth) {
+                int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
+                if (bp <= 0) bp = i;
+                cir.setReturnValue(bp);
+                return;
+            }
+
+            // Add spacing only if another visible glyph follows on this line.
+            // Importantly, we only advance the width after confirming the current
+            // glyph itself fits. Otherwise trailing spacing could force an early
+            // wrap and steal the last word from the previous line.
             boolean nextVisibleSameLine = false;
             int j = i + 1;
             while (j < length) {
@@ -311,16 +321,12 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                 if (batcher.getCharWidthFine(cj) > 0) nextVisibleSameLine = true;
                 break;
             }
-            if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
 
-            if (next > maxWidth) {
-                int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
-                if (bp <= 0) bp = i;
-                cir.setReturnValue(bp);
-                return;
-            }
+            float widthAfterChar = widthWithChar;
+            if (nextVisibleSameLine) widthAfterChar += batcher.getGlyphSpacing();
 
-            currentWidth = next;
+            currentWidth = widthAfterChar;
+            
             i++;
             lastSafePosition = i;
         }
