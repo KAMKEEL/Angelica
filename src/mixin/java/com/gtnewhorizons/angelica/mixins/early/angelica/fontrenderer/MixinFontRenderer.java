@@ -300,37 +300,6 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
 
-            // Only consider spacing if another visible glyph follows on this line
-            boolean nextVisibleSameLine = false;
-            boolean nextGlyphWidthKnown = false;
-            float nextGlyphWidth = 0.0f;
-            boolean boldForNextGlyph = isBold;
-            int j = i + 1;
-            while (j < length) {
-                char cj = str.charAt(j);
-                if (cj == '\n') break;
-                int n2 = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLength(str, j); // STRICT
-                if (n2 > 0) {
-                    if (n2 == 2 && j + 1 < length) {
-                        char fmt = Character.toLowerCase(str.charAt(j + 1));
-                        if (fmt == 'l') boldForNextGlyph = true;
-                        else if (fmt == 'r' || (fmt >= '0' && fmt <= '9') || (fmt >= 'a' && fmt <= 'f')) boldForNextGlyph = false;
-                    }
-                    j += n2;
-                    continue;
-                }
-
-                float candWidth = batcher.getCharWidthFine(cj);
-                if (candWidth < 0) candWidth = 0;
-                if (candWidth > 0) {
-                    nextVisibleSameLine = true;
-                    if (boldForNextGlyph) candWidth += batcher.getShadowOffset();
-                    nextGlyphWidth = candWidth;
-                    nextGlyphWidthKnown = true;
-                }
-                break;
-            }
-
             if (next > maxWidth) {
                 int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
                 if (bp <= 0) bp = i;
@@ -339,19 +308,6 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             }
 
             currentWidth = next;
-            if (nextVisibleSameLine) {
-                float spacing = batcher.getGlyphSpacing();
-                if (spacing > 0.0f) {
-                    float spaced = currentWidth + spacing;
-                    if (spaced <= maxWidth) {
-                        if (nextGlyphWidthKnown && spaced + nextGlyphWidth > maxWidth) {
-                            // Skip spacing so the next glyph still fits on this line
-                        } else {
-                            currentWidth = spaced;
-                        }
-                    }
-                }
-            }
             i++;
             lastSafePosition = i;
         }
@@ -436,7 +392,6 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
-            next += batcher.getGlyphSpacing();
 
             if (next > width) {
                 cir.setReturnValue(text.substring(firstSafePosition));
