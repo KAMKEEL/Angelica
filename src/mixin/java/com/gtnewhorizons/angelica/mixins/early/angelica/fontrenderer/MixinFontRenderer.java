@@ -297,8 +297,8 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             float charW = batcher.getCharWidthFine(c);
             if (charW < 0) charW = 0;
 
-            float next = currentWidth + charW;
-            if (isBold && charW > 0) next += batcher.getShadowOffset();
+            float nextNoSpacing = currentWidth + charW;
+            if (isBold && charW > 0) nextNoSpacing += batcher.getShadowOffset();
 
             // Add spacing only if another visible glyph follows on this line
             boolean nextVisibleSameLine = false;
@@ -311,13 +311,19 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                 if (batcher.getCharWidthFine(cj) > 0) nextVisibleSameLine = true;
                 break;
             }
-            if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
-
-            if (next > maxWidth) {
+            if (nextNoSpacing > maxWidth) {
                 int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
                 if (bp <= 0) bp = i;
                 cir.setReturnValue(bp);
                 return;
+            }
+
+            float next = nextNoSpacing;
+            if (nextVisibleSameLine) {
+                float spacing = batcher.getGlyphSpacing();
+                if (spacing > 0 && next + spacing <= maxWidth) {
+                    next += spacing;
+                }
             }
 
             currentWidth = next;
