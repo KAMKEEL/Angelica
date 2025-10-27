@@ -1,7 +1,9 @@
 package com.gtnewhorizons.angelica.mixins.early.angelica.fontrenderer;
 
 import com.gtnewhorizon.gtnhlib.util.font.IFontParameters;
+import com.gtnewhorizons.angelica.client.font.AngelicaFontRenderContext;
 import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
+import com.gtnewhorizons.angelica.client.font.FormattedTextMetrics;
 import com.gtnewhorizons.angelica.glsm.GLStateManager;
 import com.gtnewhorizons.angelica.mixins.interfaces.FontRendererAccessor;
 import net.minecraft.client.gui.FontRenderer;
@@ -259,60 +261,9 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             return 0;
         }
 
-        int length = str.length();
-        float currentWidth = 0.0f;
-        int lastSafePosition = 0;
-        boolean isBold = false;
-
-        for (int i = 0; i < length; ) {
-            // Check for color codes (RGB or traditional)
-            int codeLen = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLength(str, i);
-
-            if (codeLen > 0) {
-                // This is a color code - skip it atomically (never split)
-                // But first check if we need to update bold state
-                if (codeLen == 2 && i + 1 < length) {
-                    char fmt = Character.toLowerCase(str.charAt(i + 1));
-                    if (fmt == 'l') {
-                        isBold = true;
-                    } else if (fmt == 'r') {
-                        isBold = false;
-                    } else if ((fmt >= '0' && fmt <= '9') || (fmt >= 'a' && fmt <= 'f')) {
-                        isBold = false; // Color codes reset bold
-                    }
-                }
-
-                i += codeLen;
-                lastSafePosition = i; // Can safely break after a complete color code
-                continue;
-            }
-
-            // Regular character
-            char c = str.charAt(i);
-            float charWidth = angelica$getBatcher().getCharWidthFine(c);
-
-            if (charWidth < 0) {
-                // Formatting character outside of detected codes
-                charWidth = 0;
-            }
-
-            float nextWidth = currentWidth + charWidth;
-            if (isBold && charWidth > 0) {
-                nextWidth += angelica$getBatcher().getShadowOffset();
-            }
-
-            if (nextWidth > maxWidth) {
-                // Would exceed width - return string up to last safe position
-                return Math.min(lastSafePosition, length);
-            }
-
-            currentWidth = nextWidth;
-            i++;
-            lastSafePosition = i;
-        }
-
-        // Entire string fits
-        return length;
+        return FormattedTextMetrics.computeLineBreakIndex(str, maxWidth,
+            AngelicaFontRenderContext.isRawTextRendering(), angelica$getBatcher()::getCharWidthFine,
+            angelica$getBatcher().getGlyphSpacing(), angelica$getBatcher().getShadowOffset());
     }
 
     /**
@@ -363,6 +314,11 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                         continue;
                     }
                 }
+            }
+
+            if (c == '\n') {
+                cir.setReturnValue(text.substring(i + 1));
+                return;
             }
 
             float charWidth = angelica$getBatcher().getCharWidthFine(c);

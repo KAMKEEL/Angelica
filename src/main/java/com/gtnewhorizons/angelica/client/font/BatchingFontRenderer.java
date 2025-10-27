@@ -845,40 +845,8 @@ public class BatchingFontRenderer {
             return 0.0f;
         }
 
-        float width = 0.0f;
-        boolean isBold = false;
         final boolean rawMode = AngelicaFontRenderContext.isRawTextRendering();
-
-        for (int i = 0; i < str.length(); i++) {
-            int codeLen = rawMode ? 0 : ColorCodeUtils.detectColorCodeLength(str, i);
-            if (codeLen > 0) {
-                // Check if this is a bold formatting code
-                if (codeLen == 2 && i + 1 < str.length()) {
-                    char fmt = Character.toLowerCase(str.charAt(i + 1));
-                    if (fmt == 'l') {
-                        isBold = true;
-                    } else if (fmt == 'r') {
-                        isBold = false;
-                    } else if ((fmt >= '0' && fmt <= '9') || (fmt >= 'a' && fmt <= 'f')) {
-                        isBold = false; // Color codes reset bold
-                    }
-                }
-
-                i += codeLen - 1; // Skip the color code (minus 1 because loop will increment)
-                continue;
-            }
-
-            char c = str.charAt(i);
-            float charWidth = getCharWidthFine(c);
-            if (charWidth > 0) {
-                width += charWidth;
-                if (isBold) {
-                    width += this.getShadowOffset(); // Bold adds extra width
-                }
-                width += getGlyphSpacing();
-            }
-        }
-
-        return width;
+        return FormattedTextMetrics.calculateMaxLineWidth(str, rawMode, this::getCharWidthFine,
+            getGlyphSpacing(), this.getShadowOffset());
     }
 }
