@@ -245,14 +245,18 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
     /**
      * Intercept sizeStringToWidth to properly handle RGB color codes.
-     * This method finds the substring that fits within the given width.
+     * This method finds the split index that fits within the given width.
      * Without this, RGB codes can be split across lines in chat/text wrapping.
      */
     @Inject(method = "sizeStringToWidth", at = @At("HEAD"), cancellable = true)
-    public void angelica$sizeStringToWidthRgbAware(String str, int maxWidth, CallbackInfoReturnable<String> cir) {
-        if (str == null || str.isEmpty()) {
-            cir.setReturnValue("");
-            return;
+    public void angelica$sizeStringToWidthRgbAware(String str, int maxWidth, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue(angelica$computeSizeStringToWidthIndex(str, maxWidth));
+    }
+
+    @Unique
+    private int angelica$computeSizeStringToWidthIndex(String str, int maxWidth) {
+        if (str == null || str.isEmpty() || maxWidth <= 0) {
+            return 0;
         }
 
         int length = str.length();
@@ -299,8 +303,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
             if (nextWidth > maxWidth) {
                 // Would exceed width - return string up to last safe position
-                cir.setReturnValue(str.substring(0, lastSafePosition));
-                return;
+                return Math.min(lastSafePosition, length);
             }
 
             currentWidth = nextWidth;
@@ -309,7 +312,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
         }
 
         // Entire string fits
-        cir.setReturnValue(str);
+        return length;
     }
 
     /**
@@ -325,7 +328,8 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
         if (!reverse) {
             // Forward direction - reuse sizeStringToWidth logic
-            angelica$sizeStringToWidthRgbAware(text, width, cir);
+            int endIndex = angelica$computeSizeStringToWidthIndex(text, width);
+            cir.setReturnValue(text.substring(0, Math.min(endIndex, text.length())));
             return;
         }
 
@@ -424,13 +428,9 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
      */
     @Unique
     private String angelica$wrapFormattedStringToWidth(String str, int wrapWidth) {
-        // Use our RGB-aware sizeStringToWidth via mixin callback
-        CallbackInfoReturnable<String> cir = new CallbackInfoReturnable<>("angelica$sizeStringToWidth", true);
-        angelica$sizeStringToWidthRgbAware(str, wrapWidth, cir);
-        String sized = cir.getReturnValue();
-        int breakPoint = sized.length();
+        int breakPoint = angelica$computeSizeStringToWidthIndex(str, wrapWidth);
 
-        if (str.length() <= breakPoint) {
+        if (breakPoint >= str.length()) {
             // Everything fits
             return str;
         } else {
