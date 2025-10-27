@@ -101,8 +101,8 @@ public class ColorCodeUtils {
      * @param pos Position to check
      * @return Length of color code:
      *         - 7 for &RRGGBB format (& + 6 hex)
-     *         - 9 for <RRGGBB> format (< + 6 hex + >)
-     *         - 10 for </RRGGBB> format (</ + 6 hex + >)
+     *         - 8 for <RRGGBB> format (< + 6 hex + >)
+     *         - 9 for </RRGGBB> format (</ + 6 hex + >)
      *         - 2 for §X format (handled elsewhere, but counted here)
      *         - 0 for no color code
      */
@@ -145,14 +145,14 @@ public class ColorCodeUtils {
         // Check for </RRGGBB> format (closing tag)
         if (c == '<' && pos + 9 <= str.length() && str.charAt(pos + 1) == '/' && str.charAt(pos + 8) == '>') {
             if (isValidHexString(str, pos + 2)) {
-                return 10;
+                return 9;
             }
         }
 
         // Check for <RRGGBB> format (opening tag)
         if (c == '<' && pos + 8 <= str.length() && str.charAt(pos + 7) == '>') {
             if (isValidHexString(str, pos + 1)) {
-                return 9;
+                return 8;
             }
         }
 

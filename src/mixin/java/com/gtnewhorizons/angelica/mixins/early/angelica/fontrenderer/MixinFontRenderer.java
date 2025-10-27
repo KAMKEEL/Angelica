@@ -470,12 +470,12 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                     currentColorCode = code;
                     colorStack.clear();
                     styleCodes.setLength(0);
-                } else if (codeLen == 9 && firstChar == '<') {
+                } else if (codeLen == 8 && firstChar == '<') {
                     // <RRGGBB> - push current colour (if any) then apply new colour
                     colorStack.push(currentColorCode);
                     currentColorCode = code;
                     styleCodes.setLength(0);
-                } else if (codeLen == 10 && firstChar == '<') {
+                } else if (codeLen == 9 && firstChar == '<') {
                     // </RRGGBB> - pop back to previous colour (or none)
                     currentColorCode = colorStack.isEmpty() ? null : colorStack.pop();
                     styleCodes.setLength(0);

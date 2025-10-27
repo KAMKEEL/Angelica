@@ -834,8 +834,8 @@ public class BatchingFontRenderer {
      * This method correctly skips over:
      * - Traditional § codes (2 chars)
      * - &RRGGBB format (7 chars)
-     * - <RRGGBB> format (9 chars)
-     * - </RRGGBB> format (10 chars)
+     * - <RRGGBB> format (8 chars)
+     * - </RRGGBB> format (9 chars)
      *
      * @param str The string to measure
      * @return The width in pixels
