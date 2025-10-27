@@ -32,7 +32,7 @@ import static com.gtnewhorizon.gtnhlib.bytebuf.MemoryUtilities.memRealloc;
  *
  * @author eigenraven
  */
-public class BatchingFontRenderer {
+public class BatchingFontRenderer implements FontWidthProvider {
 
     /**
      * The underlying FontRenderer object that's being accelerated
