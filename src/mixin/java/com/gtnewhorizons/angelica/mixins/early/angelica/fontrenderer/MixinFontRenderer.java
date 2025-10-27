@@ -2,6 +2,7 @@ package com.gtnewhorizons.angelica.mixins.early.angelica.fontrenderer;
 
 import com.gtnewhorizon.gtnhlib.util.font.IFontParameters;
 import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
+import com.gtnewhorizons.angelica.client.font.RgbLineBreaker;
 import com.gtnewhorizons.angelica.glsm.GLStateManager;
 import com.gtnewhorizons.angelica.mixins.interfaces.FontRendererAccessor;
 import net.minecraft.client.gui.FontRenderer;
@@ -117,7 +118,10 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
     private static final char angelica$FORMATTING_CHAR = 167; // §
 
     @Unique
-    private static final float angelica$1_over_255 = 1.0f/255.0f; // §
+    private static final float angelica$1_over_255 = 1.0f / 255.0f; // §
+
+    @Unique
+    private static final float angelica$WIDTH_EPSILON = 0.001f;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void angelica$injectBatcher(GameSettings settings, ResourceLocation fontLocation, TextureManager texManager,
@@ -260,73 +264,20 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
         }
 
         final BatchingFontRenderer batcher = angelica$getBatcher();
-        final int length = str.length();
-        float currentWidth = 0.0f;
-        int lastSafePosition = 0; // after full color code / normal char
-        int lastSpace = -1;       // word wrap fallback
-        boolean isBold = false;
-
-        for (int i = 0; i < length; ) {
-            // Hard line break
-            if (str.charAt(i) == '\n') {
-                cir.setReturnValue(i);
-                return;
-            }
-
-            // STRICT color/format token
-            final int codeLen = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLength(str, i);
-            if (codeLen > 0) {
-                if (codeLen == 2 && i + 1 < length) {
-                    final char fmt = Character.toLowerCase(str.charAt(i + 1));
-                    if (fmt == 'l') {
-                        isBold = true;
-                    } else if (fmt == 'r' || (fmt >= '0' && fmt <= '9') || (fmt >= 'a' && fmt <= 'f')) {
-                        isBold = false;
-                    }
+        int breakPoint = RgbLineBreaker.computeForwardBreak(str, maxWidth,
+            new RgbLineBreaker.Metrics() {
+                @Override
+                public float charWidth(char ch) {
+                    return batcher.getCharWidthFine(ch);
                 }
-                i += codeLen;
-                lastSafePosition = i; // never break inside tokens
-                continue;
-            }
 
-            // Normal char
-            final char c = str.charAt(i);
-            if (c == ' ')
-                lastSpace = i;
+                @Override
+                public float boldOffset() {
+                    return batcher.getShadowOffset();
+                }
+            }, angelica$WIDTH_EPSILON);
 
-            float charW = batcher.getCharWidthFine(c);
-            if (charW < 0) charW = 0;
-
-            float next = currentWidth + charW;
-            if (isBold && charW > 0) next += batcher.getShadowOffset();
-
-            // Add spacing only if another visible glyph follows on this line
-            boolean nextVisibleSameLine = false;
-            int j = i + 1;
-            while (j < length) {
-                char cj = str.charAt(j);
-                if (cj == '\n') break;
-                int n2 = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLength(str, j); // STRICT
-                if (n2 > 0) { j += n2; continue; }
-                if (batcher.getCharWidthFine(cj) > 0) nextVisibleSameLine = true;
-                break;
-            }
-            if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
-
-            if (next > maxWidth) {
-                int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
-                if (bp <= 0) bp = i;
-                cir.setReturnValue(bp);
-                return;
-            }
-
-            currentWidth = next;
-            i++;
-            lastSafePosition = i;
-        }
-
-        // Entire string fits
-        cir.setReturnValue(length);
+        cir.setReturnValue(breakPoint);
     }
 
     /**
@@ -352,7 +303,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             return;
         }
 
-        // Reverse: trim from the end, stop at newline, include spacing/bold.
+        // Reverse: trim from the end, stop at newline, include bold width.
         // IMPORTANT: do NOT treat partial <RGB as zero-width here.
         final int length = text.length();
         float currentWidth = 0.0f;
@@ -405,9 +356,8 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
-            next += batcher.getGlyphSpacing();
 
-            if (next > width) {
+            if (next > width + angelica$WIDTH_EPSILON) {
                 cir.setReturnValue(text.substring(firstSafePosition));
                 return;
             }
