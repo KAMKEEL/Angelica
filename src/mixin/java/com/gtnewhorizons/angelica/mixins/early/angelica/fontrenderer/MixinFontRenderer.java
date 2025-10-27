@@ -117,7 +117,10 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
     private static final char angelica$FORMATTING_CHAR = 167; // §
 
     @Unique
-    private static final float angelica$1_over_255 = 1.0f/255.0f; // §
+    private static final float angelica$1_over_255 = 1.0f / 255.0f; // §
+
+    @Unique
+    private static final float angelica$WIDTH_EPSILON = 0.001f;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void angelica$injectBatcher(GameSettings settings, ResourceLocation fontLocation, TextureManager texManager,
@@ -313,7 +316,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             }
             if (nextVisibleSameLine) next += batcher.getGlyphSpacing();
 
-            if (next > maxWidth) {
+            if (next > maxWidth + angelica$WIDTH_EPSILON) {
                 int bp = (lastSpace >= 0 ? lastSpace : lastSafePosition);
                 if (bp <= 0) bp = i;
                 cir.setReturnValue(bp);
@@ -407,7 +410,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             if (isBold && charW > 0) next += batcher.getShadowOffset();
             next += batcher.getGlyphSpacing();
 
-            if (next > width) {
+            if (next > width + angelica$WIDTH_EPSILON) {
                 cir.setReturnValue(text.substring(firstSafePosition));
                 return;
             }
