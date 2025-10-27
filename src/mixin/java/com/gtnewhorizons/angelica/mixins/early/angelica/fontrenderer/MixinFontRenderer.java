@@ -358,6 +358,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
         float currentWidth = 0.0f;
         int firstSafePosition = length;
         boolean isBold = false;
+        boolean hasVisibleGlyphOnRight = false;
 
         for (int i = length - 1; i >= 0; ) {
             final char c = text.charAt(i);
@@ -405,7 +406,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
 
             float next = currentWidth + charW;
             if (isBold && charW > 0) next += batcher.getShadowOffset();
-            next += batcher.getGlyphSpacing();
+            if (hasVisibleGlyphOnRight && charW > 0) next += batcher.getGlyphSpacing();
 
             if (next > width) {
                 cir.setReturnValue(text.substring(firstSafePosition));
@@ -415,6 +416,9 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             currentWidth = next;
             i--;
             firstSafePosition = i + 1;
+            if (charW > 0) {
+                hasVisibleGlyphOnRight = true;
+            }
         }
 
         // Entire string fits from start
