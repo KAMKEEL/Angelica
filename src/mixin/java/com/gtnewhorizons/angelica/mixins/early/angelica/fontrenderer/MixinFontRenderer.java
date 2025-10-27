@@ -3,6 +3,7 @@ package com.gtnewhorizons.angelica.mixins.early.angelica.fontrenderer;
 import com.gtnewhorizon.gtnhlib.util.font.IFontParameters;
 import com.gtnewhorizons.angelica.client.font.AngelicaFontRenderContext;
 import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
+import com.gtnewhorizons.angelica.client.font.ColorCodeUtils;
 import com.gtnewhorizons.angelica.client.font.FormattedTextMetrics;
 import com.gtnewhorizons.angelica.glsm.GLStateManager;
 import com.gtnewhorizons.angelica.mixins.interfaces.FontRendererAccessor;
@@ -22,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Constant;
 
-import java.util.ArrayDeque;
 import java.util.Random;
 
 /**
@@ -302,7 +302,7 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
                     boolean validHex = true;
                     for (int j = i - 5; j <= i; j++) {
                         char hexChar = text.charAt(j);
-                        if (!com.gtnewhorizons.angelica.client.font.ColorCodeUtils.isValidHexChar(hexChar)) {
+                        if (!ColorCodeUtils.isValidHexChar(hexChar)) {
                             validHex = false;
                             break;
                         }
@@ -396,78 +396,12 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             boolean isSpaceOrNewline = charAtBreak == ' ' || charAtBreak == '\n';
 
             // Extract formatting codes from first part and prepend to remainder
-            String formattingCodes = angelica$extractFormatFromString(firstPart);
+            String formattingCodes = ColorCodeUtils.extractFormatFromString(firstPart);
             String remainder = formattingCodes + str.substring(breakPoint + (isSpaceOrNewline ? 1 : 0));
 
             // Recurse on remainder
             return firstPart + "\n" + angelica$wrapFormattedStringToWidth(remainder, wrapWidth);
         }
-    }
-
-    /**
-     * RGB-aware version of vanilla's getFormatFromString.
-     * Extracts active formatting codes from a string (RGB colors + traditional formatting).
-     */
-    @Unique
-    private static String angelica$extractFormatFromString(String str) {
-        String currentColorCode = null;
-        StringBuilder styleCodes = new StringBuilder();
-        ArrayDeque<String> colorStack = new ArrayDeque<>();
-
-        for (int i = 0; i < str.length(); ) {
-            int codeLen = com.gtnewhorizons.angelica.client.font.ColorCodeUtils.detectColorCodeLengthIgnoringRaw(str, i);
-
-            if (codeLen > 0) {
-                char firstChar = str.charAt(i);
-                String code = str.substring(i, i + codeLen);
-
-                if (codeLen == 7 && firstChar == '&') {
-                    // &RRGGBB - inline RGB colour, clears prior colour stack
-                    currentColorCode = code;
-                    colorStack.clear();
-                    styleCodes.setLength(0);
-                } else if (codeLen == 8 && firstChar == '<') {
-                    // <RRGGBB> - push current colour (if any) then apply new colour
-                    colorStack.push(currentColorCode);
-                    currentColorCode = code;
-                    styleCodes.setLength(0);
-                } else if (codeLen == 9 && firstChar == '<') {
-                    // </RRGGBB> - pop back to previous colour (or none)
-                    currentColorCode = colorStack.isEmpty() ? null : colorStack.pop();
-                    styleCodes.setLength(0);
-                } else if (codeLen == 2) {
-                    // Traditional formatting code
-                    char fmt = Character.toLowerCase(str.charAt(i + 1));
-
-                    if ((fmt >= '0' && fmt <= '9') || (fmt >= 'a' && fmt <= 'f')) {
-                        currentColorCode = code;
-                        colorStack.clear();
-                        styleCodes.setLength(0);
-                    } else if (fmt == 'r') {
-                        currentColorCode = null;
-                        colorStack.clear();
-                        styleCodes.setLength(0);
-                    } else if (fmt == 'l' || fmt == 'o' || fmt == 'n' || fmt == 'm' || fmt == 'k') {
-                        styleCodes.append(code);
-                    }
-                }
-
-                i += codeLen;
-                continue;
-            }
-
-            i++;
-        }
-
-        StringBuilder result = new StringBuilder();
-        if (currentColorCode != null) {
-            result.append(currentColorCode);
-        }
-        if (styleCodes.length() > 0) {
-            result.append(styleCodes);
-        }
-
-        return result.toString();
     }
 
     @Inject(method = "getFormatFromString", at = @At("HEAD"), cancellable = true)
@@ -477,6 +411,6 @@ public abstract class MixinFontRenderer implements FontRendererAccessor, IFontPa
             return;
         }
 
-        cir.setReturnValue(angelica$extractFormatFromString(text));
+        cir.setReturnValue(ColorCodeUtils.extractFormatFromString(text));
     }
 }
