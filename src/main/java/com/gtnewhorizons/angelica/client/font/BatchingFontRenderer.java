@@ -381,6 +381,8 @@ public class BatchingFontRenderer {
             return anchorX + (enableShadow ? 1.0f : 0.0f);
         }
         final int shadowColor = (color & 0xfcfcfc) >> 2 | color & 0xff000000;
+        final int ambientColor = color;
+        final int ambientShadowColor = shadowColor;
 
         FontProviderMC.get(this.isSGA).charWidth = this.charWidth;
         FontProviderMC.get(this.isSGA).locationFontTexture = this.locationFontTexture;
@@ -465,8 +467,12 @@ public class BatchingFontRenderer {
                         // Apply RGB color (preserve formatting state to allow &l&FFxxxx patterns)
                         colorStack.clear();
                         shadowStack.clear();
-                        curColor = (curColor & 0xFF000000) | (rgb & 0x00FFFFFF);
-                        curShadowColor = (curShadowColor & 0xFF000000) | ColorCodeUtils.calculateShadowColor(rgb);
+                        final int scaledRgb = ColorCodeUtils.scaleRgbByBaseBrightness(ambientColor, rgb);
+                        final int scaledShadowRgb = ColorCodeUtils.scaleRgbByBaseBrightness(
+                            ambientShadowColor,
+                            ColorCodeUtils.calculateShadowColor(rgb));
+                        curColor = (curColor & 0xFF000000) | scaledRgb;
+                        curShadowColor = (curShadowColor & 0xFF000000) | scaledShadowRgb;
 
                         // reset styles on color change (vanilla behavior)
                         curRandom = false;
@@ -542,8 +548,12 @@ public class BatchingFontRenderer {
 
                             colorStack.add(curColor);
                             shadowStack.add(curShadowColor);
-                            curColor = (curColor & 0xFF000000) | (rgb & 0x00FFFFFF);
-                            curShadowColor = (curShadowColor & 0xFF000000) | ColorCodeUtils.calculateShadowColor(rgb);
+                            final int scaledRgb = ColorCodeUtils.scaleRgbByBaseBrightness(ambientColor, rgb);
+                            final int scaledShadowRgb = ColorCodeUtils.scaleRgbByBaseBrightness(
+                                ambientShadowColor,
+                                ColorCodeUtils.calculateShadowColor(rgb));
+                            curColor = (curColor & 0xFF000000) | scaledRgb;
+                            curShadowColor = (curShadowColor & 0xFF000000) | scaledShadowRgb;
 
                             // reset styles on color change
                             curRandom = false;
@@ -678,8 +688,12 @@ public class BatchingFontRenderer {
                 if (curRainbow) {
                     float hue = (rainbowIndex * 15.0f) % 360.0f;
                     int rainbowRgb = ColorCodeUtils.hsvToRgb(hue, 1.0f, 1.0f);
-                    curColor = (curColor & 0xFF000000) | (rainbowRgb & 0x00FFFFFF);
-                    curShadowColor = (curShadowColor & 0xFF000000) | ColorCodeUtils.calculateShadowColor(rainbowRgb);
+                    final int scaledRgb = ColorCodeUtils.scaleRgbByBaseBrightness(ambientColor, rainbowRgb);
+                    final int scaledShadowRgb = ColorCodeUtils.scaleRgbByBaseBrightness(
+                        ambientShadowColor,
+                        ColorCodeUtils.calculateShadowColor(rainbowRgb));
+                    curColor = (curColor & 0xFF000000) | scaledRgb;
+                    curShadowColor = (curShadowColor & 0xFF000000) | scaledShadowRgb;
                     rainbowIndex++;
                 }
 
