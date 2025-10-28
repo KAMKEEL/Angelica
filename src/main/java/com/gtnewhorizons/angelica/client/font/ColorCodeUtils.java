@@ -173,6 +173,40 @@ public class ColorCodeUtils {
     }
 
     /**
+     * Scales an RGB color by the brightness of the provided base color. Used to preserve ambient lighting
+     * information (for example, block light applied to sign text) while still allowing literal RGB overrides.
+     *
+     * The alpha channel of {@code baseColor} is ignored.
+     *
+     * @param baseColor ARGB color containing the ambient brightness that should be preserved
+     * @param rgb       Literal RGB color to apply (0xRRGGBB)
+     * @return Scaled RGB color (0xRRGGBB)
+     */
+    public static int scaleRgbByBaseBrightness(int baseColor, int rgb) {
+        final int baseRed = (baseColor >> 16) & 0xFF;
+        final int baseGreen = (baseColor >> 8) & 0xFF;
+        final int baseBlue = baseColor & 0xFF;
+
+        final int maxComponent = Math.max(baseRed, Math.max(baseGreen, baseBlue));
+
+        if (maxComponent >= 255) {
+            // Base is already full brightness (common in GUIs/chat), keep literal color untouched
+            return rgb & 0x00FFFFFF;
+        }
+
+        if (maxComponent <= 0) {
+            // Fully dark ambient color - keep the text dark as well
+            return 0;
+        }
+
+        final int r = ((rgb >> 16) & 0xFF) * maxComponent / 255;
+        final int g = ((rgb >> 8) & 0xFF) * maxComponent / 255;
+        final int b = (rgb & 0xFF) * maxComponent / 255;
+
+        return (r << 16) | (g << 8) | b;
+    }
+
+    /**
      * Convert HSV (Hue, Saturation, Value) color to RGB.
      *
      * @param hue Hue in degrees (0-360)
