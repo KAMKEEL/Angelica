@@ -1,6 +1,7 @@
 package com.gtnewhorizons.angelica.client.font;
 
 import com.google.common.collect.ImmutableSet;
+import com.gtnewhorizons.angelica.compat.HexTextCompat;
 import com.gtnewhorizons.angelica.config.FontConfig;
 import com.gtnewhorizons.angelica.glsm.GLStateManager;
 import com.gtnewhorizons.angelica.mixins.interfaces.FontRendererAccessor;
@@ -414,6 +415,8 @@ public class BatchingFontRenderer {
             boolean curStrikethrough = false;
             boolean curUnderline = false;
 
+            final HexTextCompat.FormattingState compatState = new HexTextCompat.FormattingState();
+
             final float glyphScaleY = getGlyphScaleY();
             final float heightNorth = anchorY + (underlying.FONT_HEIGHT - 1.0f) * (0.5f - glyphScaleY / 2);
             final float heightSouth = (underlying.FONT_HEIGHT - 1.0f) * glyphScaleY;
@@ -428,6 +431,19 @@ public class BatchingFontRenderer {
             for (int charIdx = stringOffset; charIdx < stringEnd; charIdx++) {
                 char chr = string.charAt(charIdx);
                 if (chr == FORMATTING_CHAR && (charIdx + 1) < stringEnd) {
+                    compatState.load(curColor, curShadowColor, curRandom, curBold, curStrikethrough, curUnderline, curItalic);
+                    final int compatIdx = HexTextCompat.tryHandleFormatting(string, charIdx, stringEnd, compatState);
+                    if (compatIdx >= 0) {
+                        curColor = compatState.color;
+                        curShadowColor = compatState.shadowColor;
+                        curRandom = compatState.random;
+                        curBold = compatState.bold;
+                        curStrikethrough = compatState.strikethrough;
+                        curUnderline = compatState.underline;
+                        curItalic = compatState.italic;
+                        charIdx = compatIdx;
+                        continue;
+                    }
                     final char fmtCode = Character.toLowerCase(string.charAt(charIdx + 1));
                     charIdx++;
 
