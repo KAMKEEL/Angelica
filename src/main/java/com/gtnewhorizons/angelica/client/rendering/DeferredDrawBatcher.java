@@ -62,6 +62,12 @@ public class DeferredDrawBatcher {
         }
 
         TessellatorManager.stopCapturingDirect();
+
+        // A captured draw discards the vanilla tessellator, so reopen it for the trailing draw
+        final Tessellator tessellator = Tessellator.instance;
+        if (!tessellator.isDrawing) {
+            tessellator.startDrawingQuads();
+        }
     }
 
     private static void flushSorted(List<DeferredBatchTessellator.DrawRange> ranges) {
