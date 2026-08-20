@@ -44,7 +44,7 @@ public final class FontEffectRegistry {
         return anyRegistered;
     }
 
-    static boolean isRegistered(char lowerCode) {
+    public static boolean isRegistered(char lowerCode) {
         return anyRegistered && lowerCode >= 'a' && lowerCode <= 'z' && EFFECTS[lowerCode - 'a'] != null;
     }
 
