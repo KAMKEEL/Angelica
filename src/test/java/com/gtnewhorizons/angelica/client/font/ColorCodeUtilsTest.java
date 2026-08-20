@@ -12,15 +12,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ColorCodeUtilsTest {
 
+    private boolean ampersandConversionBefore;
+
     @BeforeEach
     void setUp() {
+        ampersandConversionBefore = AngelicaConfig.enableAmpersandConversion;
         AngelicaConfig.enableAmpersandConversion = true;
         ColorCodeUtils.setConversionSuppressor(null);
     }
 
     @AfterEach
     void tearDown() {
-        AngelicaConfig.enableAmpersandConversion = false;
+        AngelicaConfig.enableAmpersandConversion = ampersandConversionBefore;
         ColorCodeUtils.setConversionSuppressor(null);
     }
 
