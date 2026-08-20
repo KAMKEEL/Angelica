@@ -1,6 +1,8 @@
 package com.gtnewhorizons.angelica.client.font;
 
 import com.gtnewhorizons.angelica.config.AngelicaConfig;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.function.BooleanSupplier;
 
@@ -18,6 +20,8 @@ import java.util.function.BooleanSupplier;
 public final class ColorCodeUtils {
 
     private ColorCodeUtils() {}
+
+    private static final Logger LOGGER = LogManager.getLogger("AngelicaFontEffects");
 
     public static final char FORMATTING_CHAR = '§';
     public static final char ESCAPED_AMPERSAND = '';
@@ -78,6 +82,9 @@ public final class ColorCodeUtils {
      * suspend {@code &} conversion for strings rendered while the supplier returns true.
      */
     public static void setConversionSuppressor(BooleanSupplier suppressor) {
+        if (suppressor != null && conversionSuppressor != null && suppressor != conversionSuppressor) {
+            LOGGER.info("Replacing the & conversion suppressor; only the newest one is consulted");
+        }
         conversionSuppressor = suppressor;
     }
 
