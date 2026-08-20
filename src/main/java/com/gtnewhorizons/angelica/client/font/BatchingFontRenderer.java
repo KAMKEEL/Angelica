@@ -1580,15 +1580,18 @@ public class BatchingFontRenderer {
                 underlineEndX = curX;
                 strikethroughEndX = curX;
 
-                if ((curRainbow || curGradient) && curUnderline && underlineStartX != underlineEndX) {
+                // Flushed per glyph while the colour moves, so the line under the text is the
+                // colour of the glyph above it rather than one flat run.
+                final boolean perGlyphColor = curRainbow || curGradient || curCustomEffects != 0L;
+                if (perGlyphColor && curUnderline && underlineStartX != underlineEndX) {
                     final int ulIdx = idxWriterIndex;
-                    pushUntexRect(underlineStartX, underlineY, underlineEndX - underlineStartX, glyphScaleY, curColor);
+                    pushUntexRect(underlineStartX, underlineY, underlineEndX - underlineStartX, glyphScaleY, glyphColor);
                     pushDrawCmd(ulIdx, 6, null, false);
                     underlineStartX = underlineEndX;
                 }
-                if ((curRainbow || curGradient) && curStrikethrough && strikethroughStartX != strikethroughEndX) {
+                if (perGlyphColor && curStrikethrough && strikethroughStartX != strikethroughEndX) {
                     final int stIdx = idxWriterIndex;
-                    pushUntexRect(strikethroughStartX, strikethroughY, strikethroughEndX - strikethroughStartX, glyphScaleY, curColor);
+                    pushUntexRect(strikethroughStartX, strikethroughY, strikethroughEndX - strikethroughStartX, glyphScaleY, glyphColor);
                     pushDrawCmd(stIdx, 6, null, false);
                     strikethroughStartX = strikethroughEndX;
                 }
