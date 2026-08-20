@@ -1382,6 +1382,7 @@ public class BatchingFontRenderer {
                         } else if (fmtCode == 'q' && AngelicaConfig.enableRainbow) {
                             curRainbow = true;
                             curGradient = false;
+                            curCustomEffects = 0L;
                             rainbowCharIndex = 0;
                         } else if (fmtCode == 'z' && AngelicaConfig.enableWaveText) {
                             curWave = !curWave;
@@ -1406,6 +1407,7 @@ public class BatchingFontRenderer {
                             if (color1 != -1 && color2 != -1) {
                                 curGradient = true;
                                 curRainbow = false;
+                                curCustomEffects = 0L;
                                 gradientStartRgb = color1;
                                 gradientEndRgb = color2;
                                 gradientCharIndex = 0;
