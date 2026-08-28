@@ -31,6 +31,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -104,6 +105,9 @@ class GLContextState {
     public final FogStateStack fogState = new FogStateStack();
     public final BooleanStateStack fogMode = track(new BooleanStateStack(GL11.GL_FOG, false, true));
     public final Color4Stack color = new Color4Stack();
+    // GL_CURRENT_SECONDARY_COLOR - alpha is always 1 and unused, the color sum only adds RGB
+    public final Color4Stack secondaryColor = new Color4Stack(new Color4(0.0F, 0.0F, 0.0F, 1.0F));
+    public final BooleanStateStack colorSumState = track(new BooleanStateStack(GL14.GL_COLOR_SUM, false, true));
     public final Color4Stack clearColor = new Color4Stack(new Color4(0.0F, 0.0F, 0.0F, 0.0F));
     public final ColorMaskStack colorMask = new ColorMaskStack();
     public final IntegerStateStack drawBuffer = new IntegerStateStack(GLStateManager.DEFAULT_DRAW_BUFFER);

@@ -4,8 +4,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 
+import java.nio.FloatBuffer;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +25,7 @@ public class GLSM_CoreRemovedCaps_GLTest {
             cap("GL_POLYGON_STIPPLE", GL11.GL_POLYGON_STIPPLE),
             cap("GL_INDEX_LOGIC_OP", GL11.GL_INDEX_LOGIC_OP),
             cap("GL_AUTO_NORMAL", GL11.GL_AUTO_NORMAL),
+            cap("GL_COLOR_SUM", GL14.GL_COLOR_SUM),
             cap("GL_MAP1_COLOR_4", GL11.GL_MAP1_COLOR_4),
             cap("GL_MAP1_INDEX", GL11.GL_MAP1_INDEX),
             cap("GL_MAP1_NORMAL", GL11.GL_MAP1_NORMAL),
@@ -79,6 +83,44 @@ public class GLSM_CoreRemovedCaps_GLTest {
             assertFalse(GLStateManager.glIsEnabled(cap));
         } finally {
             GLStateManager.glDisable(cap);
+            while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
+        }
+    }
+
+    @Test
+    void secondaryColorIsCacheOnly() {
+        final FloatBuffer params = BufferUtils.createFloatBuffer(4);
+        try {
+            // Calling through to the driver here aborts the JVM in a core profile - the color sum is emulated by the FFP shaders
+            GLStateManager.glSecondaryColor3f(0.25F, 0.5F, 0.75F);
+            assertNoGlError("glSecondaryColor3f");
+
+            GLStateManager.glGetFloat(GL14.GL_CURRENT_SECONDARY_COLOR, params);
+            assertEquals(0.25F, params.get(0), "red must round-trip through the cache");
+            assertEquals(0.5F, params.get(1), "green must round-trip through the cache");
+            assertEquals(0.75F, params.get(2), "blue must round-trip through the cache");
+        } finally {
+            GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
+            while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
+        }
+    }
+
+    @Test
+    void secondaryColorIsRestoredByPopAttrib() {
+        final FloatBuffer params = BufferUtils.createFloatBuffer(4);
+        try {
+            GLStateManager.glSecondaryColor3f(0.125F, 0.25F, 0.375F);
+            GLStateManager.glPushAttrib(GL11.GL_CURRENT_BIT);
+            GLStateManager.glSecondaryColor3f(1.0F, 1.0F, 1.0F);
+            GLStateManager.glPopAttrib();
+            assertNoGlError("glPushAttrib/glSecondaryColor3f/glPopAttrib");
+
+            GLStateManager.glGetFloat(GL14.GL_CURRENT_SECONDARY_COLOR, params);
+            assertEquals(0.125F, params.get(0));
+            assertEquals(0.25F, params.get(1));
+            assertEquals(0.375F, params.get(2));
+        } finally {
+            GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
             while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
         }
     }

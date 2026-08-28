@@ -403,7 +403,12 @@ public class GLSMRedirector {
             .add("glBlendEquation")
             .add("glMultiDrawArrays")
             .add("glPointParameterf")
-            .add("glPointParameteri");
+            .add("glPointParameteri")
+            // Removed in core profile - emulated by the FFP shaders, calling through would abort the JVM
+            .add("glSecondaryColor3f")
+            .add("glSecondaryColor3d")
+            .add("glSecondaryColor3b")
+            .add("glSecondaryColor3ub");
         final var gl15 = RedirectMap.newMap()
             .add("glGenBuffers")
             .add("glBindBuffer")
