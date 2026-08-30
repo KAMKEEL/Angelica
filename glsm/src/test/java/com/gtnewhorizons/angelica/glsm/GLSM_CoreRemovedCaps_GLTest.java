@@ -50,6 +50,14 @@ public class GLSM_CoreRemovedCaps_GLTest {
         return Arguments.of(name, value);
     }
 
+    private static void assertSecondaryColor(float red, float green, float blue) {
+        final FloatBuffer params = BufferUtils.createFloatBuffer(4);
+        GLStateManager.glGetFloat(GL14.GL_CURRENT_SECONDARY_COLOR, params);
+        assertEquals(red, params.get(0), "red must round-trip through the cache");
+        assertEquals(green, params.get(1), "green must round-trip through the cache");
+        assertEquals(blue, params.get(2), "blue must round-trip through the cache");
+    }
+
     private static void assertNoGlError(String what) {
         final int error = GL11.glGetError();
         assertEquals(GL11.GL_NO_ERROR, error, () -> what + " raised 0x" + Integer.toHexString(error));
@@ -89,16 +97,12 @@ public class GLSM_CoreRemovedCaps_GLTest {
 
     @Test
     void secondaryColorIsCacheOnly() {
-        final FloatBuffer params = BufferUtils.createFloatBuffer(4);
         try {
             // Calling through to the driver here aborts the JVM in a core profile - the color sum is emulated by the FFP shaders
             GLStateManager.glSecondaryColor3f(0.25F, 0.5F, 0.75F);
             assertNoGlError("glSecondaryColor3f");
 
-            GLStateManager.glGetFloat(GL14.GL_CURRENT_SECONDARY_COLOR, params);
-            assertEquals(0.25F, params.get(0), "red must round-trip through the cache");
-            assertEquals(0.5F, params.get(1), "green must round-trip through the cache");
-            assertEquals(0.75F, params.get(2), "blue must round-trip through the cache");
+            assertSecondaryColor(0.25F, 0.5F, 0.75F);
         } finally {
             GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
             while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
@@ -107,7 +111,6 @@ public class GLSM_CoreRemovedCaps_GLTest {
 
     @Test
     void secondaryColorIsRestoredByPopAttrib() {
-        final FloatBuffer params = BufferUtils.createFloatBuffer(4);
         try {
             GLStateManager.glSecondaryColor3f(0.125F, 0.25F, 0.375F);
             GLStateManager.glPushAttrib(GL11.GL_CURRENT_BIT);
@@ -115,11 +118,43 @@ public class GLSM_CoreRemovedCaps_GLTest {
             GLStateManager.glPopAttrib();
             assertNoGlError("glPushAttrib/glSecondaryColor3f/glPopAttrib");
 
-            GLStateManager.glGetFloat(GL14.GL_CURRENT_SECONDARY_COLOR, params);
-            assertEquals(0.125F, params.get(0));
-            assertEquals(0.25F, params.get(1));
-            assertEquals(0.375F, params.get(2));
+            assertSecondaryColor(0.125F, 0.25F, 0.375F);
         } finally {
+            GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
+            while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
+        }
+    }
+
+    @Test
+    void colorSumIsRestoredByFogBitPopAttrib() {
+        try {
+            GLStateManager.glPushAttrib(GL11.GL_FOG_BIT);
+            GLStateManager.glEnable(GL14.GL_COLOR_SUM);
+            GLStateManager.glPopAttrib();
+            assertNoGlError("glPushAttrib(GL_FOG_BIT)/glEnable(GL_COLOR_SUM)/glPopAttrib");
+            assertFalse(GLStateManager.glIsEnabled(GL14.GL_COLOR_SUM));
+        } finally {
+            GLStateManager.glDisable(GL14.GL_COLOR_SUM);
+            while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
+        }
+    }
+
+    @Test
+    void secondaryColorReplaysFromDisplayList() {
+        final int list = GLStateManager.glGenLists(1);
+        try {
+            GLStateManager.glNewList(list, GL11.GL_COMPILE);
+            GLStateManager.glSecondaryColor3f(0.5F, 0.625F, 0.75F);
+            GLStateManager.glEndList();
+            assertNoGlError("glSecondaryColor3f display list compile");
+
+            GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
+            GLStateManager.glCallList(list);
+            assertNoGlError("glSecondaryColor3f display list replay");
+
+            assertSecondaryColor(0.5F, 0.625F, 0.75F);
+        } finally {
+            GLStateManager.glDeleteLists(list, 1);
             GLStateManager.glSecondaryColor3f(0.0F, 0.0F, 0.0F);
             while (GL11.glGetError() != GL11.GL_NO_ERROR) {}
         }

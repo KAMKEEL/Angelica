@@ -131,15 +131,12 @@ public final class FragmentKey {
             global |= (1L << BIT_LINE_STIPPLE);
         }
 
-        // Color sum - adds the current secondary color on top of the texture stage output
-        if (GLStateManager.getColorSumState().isEnabled()) {
-            global |= (1L << BIT_COLOR_SUM);
-        }
-
-        // Separate specular
+        // Separate specular / color sum
         if (GLStateManager.getLightingState().isEnabled()
             && GLStateManager.getLightModel().colorControl == GL12.GL_SEPARATE_SPECULAR_COLOR) {
             global |= (1L << BIT_SEPARATE_SPECULAR);
+        } else if (GLStateManager.getColorSumState().isEnabled()) {
+            global |= (1L << BIT_COLOR_SUM);
         }
 
         // Per-unit state

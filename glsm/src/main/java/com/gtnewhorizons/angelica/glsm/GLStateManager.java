@@ -3696,6 +3696,9 @@ public class GLStateManager {
             glCtx.restoreDrawBufferChanged = glCtx.drawBuffer.topChanged();
             glCtx.restoreLogicOpChanged = glCtx.logicOpMode.topChanged();
         }
+        if ((mask & GL11.GL_CURRENT_BIT) != 0) {
+            glCtx.restoreSecondaryColorChanged = glCtx.secondaryColor.topChanged();
+        }
         if ((mask & GL11.GL_STENCIL_BUFFER_BIT) != 0) {
             glCtx.restoreStencilChanged = glCtx.stencilState.topChanged();
         }
@@ -3873,7 +3876,7 @@ public class GLStateManager {
                 glCtx.dirtyTexCoordAttrib = true;
             }
             // The secondary color is a fragment stage uniform, not a vertex attribute
-            if (glCtx.fragmentGeneration != glCtx.savedFragmentGen[depth]) glCtx.fragmentGeneration++;
+            if (glCtx.restoreSecondaryColorChanged) glCtx.fragmentGeneration++;
         }
 
         postVanillaBlendChangeIfMoved(blendSnapshotted);

@@ -199,6 +199,7 @@ public class Feature {
         ));
         attribToFeatures.put(GL11.GL_FOG_BIT, ImmutableSet.of(
               GLStateManager.getFogMode()
+            , GLStateManager.getColorSumState()
             , GLStateManager.getFogState()
                                        // ^^ Fog density
                                        // ^^ Linear fog start

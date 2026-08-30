@@ -185,7 +185,7 @@ class GLContextState {
     public final int[] clientAttribSavedVertexFlags = new int[GLStateManager.CLIENT_ATTRIB_STACK_DEPTH];
     public int clientAttribStackPointer = 0;
     public final boolean[] restoreUnitChanged = new boolean[GLStateManager.MAX_TEXTURE_UNITS];
-    public boolean restoreDepthChanged, restoreBlendChanged, restoreColorMaskChanged, restoreClearColorChanged, restoreDrawBufferChanged, restoreLogicOpChanged, restoreStencilChanged, restoreViewportChanged, restoreLineChanged, restorePointChanged, restorePolygonChanged, restoreActiveUnitChanged;
+    public boolean restoreDepthChanged, restoreBlendChanged, restoreColorMaskChanged, restoreClearColorChanged, restoreDrawBufferChanged, restoreLogicOpChanged, restoreStencilChanged, restoreViewportChanged, restoreLineChanged, restorePointChanged, restorePolygonChanged, restoreActiveUnitChanged, restoreSecondaryColorChanged;
     public final BlendState vanillaBlendBefore = new BlendState();
     public final BlendState vanillaBlendAfter = new BlendState();
     public boolean vanillaBlendEnabledBefore;
