@@ -20,7 +20,13 @@ public final class EmissiveTextureHelper {
     }
 
     public static IIcon getEmissiveIcon(Block block, int side, int metadata) {
-        IIcon baseIcon = block.getIcon(side, metadata);
+        IIcon baseIcon;
+        try {
+            baseIcon = block.getIcon(side, metadata);
+        } catch (RuntimeException e) {
+            // A bad meta can make getIcon throw; skip the glow instead of failing the chunk
+            return null;
+        }
         if (baseIcon == null) return null;
 
         String baseIconName = baseIcon.getIconName();
